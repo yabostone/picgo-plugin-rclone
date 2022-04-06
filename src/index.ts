@@ -2,9 +2,10 @@ import picgo from 'picgo'
 import { formatPath} from './utils'
 import {execFile,execFileSync} from "child_process"
 import * as fs from 'fs'
+import path from  'path'
 
 
-  interface rcloneConfig{
+interface rcloneConfig{
     remoteName: string
     remoteBucketName: string
     remotePrefix: string
@@ -15,9 +16,10 @@ import * as fs from 'fs'
     backupPrefix: string
   }
   //返回false或者stdout
-function execFileSyncfunc(command:string, args: string[]){
+function execFileSyncfunc(command:string, args: string[]):string|boolean{
   try{
     const execProcess = execFileSync(command, args,{ 'encoding': 'utf8' })
+    console.log(execProcess)
     return execProcess
   }catch{
     console.log("remoteName is not exist.")
@@ -47,24 +49,22 @@ function backupInLocal(ctx, imagePath, imgObject):string{
   if((!img) && (imgObject.base64Image)){
       img = Buffer.from(imgObject.base64Image, 'base64')
   }
-
+  ret = path.resolve(ret)
   // 备份图片
-  fs.writeFile(ret, img, function(err){
-      if(err){
-          ctx.log.error(`FileStorage${err}`)
-      }
-      return ret;
-  })
-  return "false";
+  fs.writeFileSync(ret, img)
+  return ret;
 }
 
 const handle = async (ctx: picgo)=>{
-  let userConfig: rcloneConfig = ctx.getConfig("picgo.rclone")
+  let userConfig: rcloneConfig = ctx.getConfig("picBed.rclone")
   if(!userConfig){
     throw new Error("RCLONE in Picgo config not exist!")
   }
   if(userConfig.uploadPath){
     userConfig.uploadPath = userConfig.uploadPath.replace(/\/?$/, '')
+  }
+  if(userConfig.urlPrefix){
+    userConfig.urlPrefix = userConfig.urlPrefix.replace(/\/$/,'')
   }
   const output = ctx.output
   interface mapResult{
@@ -77,13 +77,13 @@ const handle = async (ctx: picgo)=>{
 //通常上传成功之后要给这个数组里每一项加入imgUrl以及url项。可以参
   const tasks = output.map((item, index) =>{//这里图片的值需要定义
     var fPath = formatPath(item,userConfig.uploadPath)
-    const rcloneLocalURI = backupInLocal(ctx, ".", item)
+    const rcloneLocalURI = backupInLocal(ctx, "./", item)
     const rcloneRemoteURL = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
     if(checkRemoteExist(userConfig.remoteName)){
-      console.log(rcloneRemoteURL)
-      console.log(rcloneLocalURI)
+      console.log(rcloneLocalURI,rcloneRemoteURL)
       // ready to try catch
-      //var up = execFileSyncfunc("rclone" , ['sync', rcloneLocalURI ,rcloneRemoteURL,])
+      var up = execFileSyncfunc("rclone" , ['sync', rcloneLocalURI ,rcloneRemoteURL])
+      console.log(`rclone stdout is:\n ${up}`)
     }else{
       throw new Error("remoteBucketName in config can not be found on remote.")
     }
@@ -93,7 +93,7 @@ const handle = async (ctx: picgo)=>{
       }
       let mR = {
         index: index,
-        url: userConfig.urlPrefix + fPath,
+        url: fPath,
       } as mapResult;
       resolve(mR)
     })
@@ -102,6 +102,7 @@ const handle = async (ctx: picgo)=>{
     const results = await Promise.all(tasks)//返回值，这里只能用手动生成的值代替
     for (let result of results) {
       const { index, url } = result
+      const imgURL = url
       delete output[index].buffer
       delete output[index].base64Image
       output[index].url = url
@@ -131,7 +132,7 @@ const config = (ctx: picgo) => {
     uploadPath: '{year}/{month}/{md5}.{extName}',  //上传路径,设定年月日
     backupName: '',
     backupBucketName: '',
-    backupPrefix: '',
+    backupPrefix: 'picgo'
   }
   let userConfig = ctx.getConfig<rcloneConfig>('picBed.rclone')
   userConfig = { ...defaultConfig, ...(userConfig || {}) }
@@ -199,43 +200,20 @@ const config = (ctx: picgo) => {
       required: false,
       message: '桶下前缀文件夹名',
       alias: '桶下前缀文件夹名'
-    },
-    {
-      name: 'urlPrefix',
-      type: 'input',
-      default: userConfig.urlPrefix,
-      message: '根据存储后端设定的域名前缀',
-      required: false,
-      alias: '分配域名前缀'
-    },     
-    {
-      name: 'uploadPath',
-      type: 'input',
-      default: userConfig.uploadPath,
-      message: '为空则以原始文件名上传到根目录',
-      required: false,
-      alias: '上传路径'
-    },
-
+    }
   ]
 }
 
-module.exports = (ctx) => {
+module.exports = (ctx:picgo) => {
   const register = () => {
     ctx.helper.uploader.register('rclone', {
-      handle,
       config,
-      name: "RCLONE"
-    })
-    ctx.helper.transformer.register('rclone', {
-      handle (ctx) {
-        console.log(ctx)
-      }
+      handle,
+      name: "rclone插件"
     })
   }
+
   return {
-    uploader: 'rclone',
-    transformer: 'rclone',
     register
   }
 }
