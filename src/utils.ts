@@ -75,7 +75,6 @@ export function formatPath (info: IImgInfo, format?: string): string {
     if (!format) {
     return info.fileName
     }
-
     const fileNameGenerator = new FileNameGenerator(info)
 
     let formatPath: string = format

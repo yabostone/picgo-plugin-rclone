@@ -44,16 +44,19 @@ function checkRemoteExist(remoteName:string) : boolean{
  * @param {图片备份文件夹}           imagePath 
  * @param {ctx.output数组成员对象}   imgObject 
  */
+
 //返回路径
 function backupInLocal(ctx, imagePath, imgObject):string{
   // 读取图片数据
-  var ret = `${imagePath}/${imgObject.fileName}`
+  var hashfName = formatPath(imgObject,"{md5}.{extName}")
+  var ret = `${imagePath}/${hashfName}`
   var img = imgObject.buffer
   if((!img) && (imgObject.base64Image)){
       img = Buffer.from(imgObject.base64Image, 'base64')
   }
   ret = path.resolve(ret)
   // 备份图片
+  console.log("filepath in Local:" + ret)
   fs.writeFileSync(ret, img)
   return ret;
 }
@@ -80,35 +83,40 @@ const handle = async (ctx: picgo)=>{
 //通常上传成功之后要给这个数组里每一项加入imgUrl以及url项。可以参
   const tasks = output.map((item, index) =>{//这里图片的值需要定义
     var fPath = formatPath(item,userConfig.uploadPath)
-    const rcloneLocalURI = backupInLocal(ctx, "./", item)
-    const rcloneRemoteURL = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
+    const rcloneLocalURI = backupInLocal(ctx, "./", item)//jpg 路径
+    const rcloneRemoteDir = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
     const rcloneLocalPosition = userConfig.localPostion + "/" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
-    const rcloneBackupURL1 = userConfig.backupName1 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
-    const rcloneBackupURL2 = userConfig.backupName2 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
-    const rcloneBackupURL3 = userConfig.backupName3 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+    const rcloneBackupDir1 = userConfig.backupName1 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+    const rcloneBackupDir2 = userConfig.backupName2 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+    const rcloneBackupDir3 = userConfig.backupName3 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
     if(checkRemoteExist(userConfig.remoteName)){
-      console.log(rcloneLocalURI,rcloneRemoteURL)
+      console.log(rcloneLocalURI,rcloneRemoteDir)
       console.log(rcloneLocalPosition)
-
       // ready to try catch
-      var up = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteURL])
+      var up = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteDir])
       console.log(`rclone stdout is remote:\n ${up}\n`)
       if(userConfig.localPostion){
         var localup = execFileSyncfunc("rclone", ["sync", "-P" , rcloneLocalURI, rcloneLocalPosition])
         console.log(rcloneLocalURI,rcloneLocalPosition)
         console.log(`rclone stdout local000:\n ${localup}\n`)
       }
-      if(checkRemoteExist(userConfig.backupName1)){
-        var up1 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupURL1])
-        console.log(`rclone stdout 1111:\n ${up1}\n`)
+      if(userConfig.backupName1){
+        if(checkRemoteExist(userConfig.backupName1)){
+          var up1 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir1])
+          console.log(`rclone stdout 1111:\n ${up1}\n`)
+        }
       }
-      if(checkRemoteExist(userConfig.backupName2)){
-        var up2 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupURL2])
-        console.log(`rclone stdout 2222:\n ${up2}\n`)
+      if(userConfig.backupName2){
+        if(checkRemoteExist(userConfig.backupName2)){
+          var up2 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir2])
+          console.log(`rclone stdout 2222:\n ${up2}\n`)
+        }
       }
-      if(checkRemoteExist(userConfig.backupName3)){
-        var up3 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupURL3])
-        console.log(`rclone stdout 3333:\n ${up3}\n`)
+      if(userConfig.backupName3){
+        if(checkRemoteExist(userConfig.backupName3)){
+          var up3 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir3])
+          console.log(`rclone stdout 3333:\n ${up3}\n`)
+        }
       }
     }else{
       throw new Error("remoteBucketName in config can not be found on remote.")
@@ -119,8 +127,9 @@ const handle = async (ctx: picgo)=>{
       }
       let mR = {
         index: index,
-        url: fPath,
+        url: userConfig.remotePrefix + "/" + fPath + "/" + path.basename(rcloneLocalURI),
       } as mapResult;
+      fs.unlinkSync(rcloneLocalURI)
       resolve(mR)
     })
   })
@@ -155,7 +164,7 @@ const config = (ctx: picgo) => {
     remoteBucketName: '',
     remotePrefix: 'picgo',
     urlPrefix: '',   //用来生成URL的前缀，必填，
-    uploadPath: '{year}/{month}/{md5}.{extName}',  //上传路径,设定年月日
+    uploadPath: '{year}/{month}/',  //上传路径,设定年月日
     backupName1: '',
     backupName2: '',
     backupName3: '',
@@ -235,7 +244,7 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.localPostion,
       required: false,
-      message: 'C:\\Pictures\\',
+      message: '本地备份绝对路径',
       alias: '本地备份绝对路径'
     },
   ]
