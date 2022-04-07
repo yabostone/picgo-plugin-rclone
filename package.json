@@ -1,7 +1,7 @@
 {
   "name": "picgo-plugin-rclone",
-  "version": "1.0.3",
-  "description": "RCLONE插件",
+  "version": "1.0.4",
+  "description": "RCLONE 支持Storj/Sia/",
   "main": "dist/index.js",
   "publishConfig": {
     "access": "public"
@@ -22,7 +22,7 @@
     "rclone",
     "Storj"
   ],
-  "author": "mingxuan",
+  "author": "xuan",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^10.10.1",

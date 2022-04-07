@@ -1,7 +1,11 @@
 ## 插件简介
 rclone 插件是一款基于PicGO调用rclone应用实现上传和备份的插件，支持rclone下各种存储后端的**上传**，**备份**和**图床**。同时rclone可以通过命令行实现图床的全量迁移。
 目前测试支持
-+ COS，OSS，S3，Storj(150GB免费存储和流量，已运行多年,支持上传备份图床)，Sia(150GB免费存储，目前仅用于上传备份)，Local(本地备份)，自建WEBDAV  等各类存储后端。
++ 去中心化存储Storj（免费150GB），Sia（运行均超7年）。
++ Local（本地备份）
++ 自建存储后端（WEBDAV，HTTP,Seafile)
++ 分布式存储后端（SeaweedFS，Minio）
++ COS，OSS，S3兼容性存储，B2等等
 
 ## 功能简介
 ### 上传
