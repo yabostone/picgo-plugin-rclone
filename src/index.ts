@@ -172,7 +172,7 @@ const config = (ctx: picgo) => {
       default: userConfig.remoteName,
       required: true,
       message: 'remoteSourceName',
-      alias: 'source remote points，远程源名'
+      alias: '远程源名'
     },
     {
       name: 'remoteBucketName',
@@ -180,7 +180,7 @@ const config = (ctx: picgo) => {
       default: userConfig.remoteBucketName,
       required: true,
       message: 'BucketName',
-      alias: '远程源的桶名'
+      alias: '桶名'
     },      
     {
       name: 'remotePrefix',
@@ -188,7 +188,7 @@ const config = (ctx: picgo) => {
       default: userConfig.remotePrefix,
       required: true,
       message: '桶下前缀文件夹名',
-      alias: '桶下前缀文件夹名'
+      alias: '桶下前缀Prefix'
     },
     {
       name: 'urlPrefix',
@@ -211,32 +211,32 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.backupName1,
       required: false,
-      message: '备份远程源名1',
-      alias: 'source remote points/远程源名'
+      message: '填写备份远程源名',
+      alias: 'remoteName/远程源名'
     },
     {
       name: 'backupName2',
       type: 'input',
       default: userConfig.backupName2,
       required: false,
-      message: '备份远程源名2',
-      alias: 'source remote points/远程源名'
+      message: '填写备份远程源名',
+      alias: 'remoteName/远程源名'
     },
     {
       name: 'bucketName3',
       type: 'input',
       default: userConfig.backupName3,
       required: false,
-      message: '备份远程源名3',
-      alias: 'source remote points/远程源名'
+      message: '填写备份远程源名',
+      alias: 'remoteName/远程源名'
     },
     {
       name: 'localPostion',
       type: 'input',
       default: userConfig.localPostion,
       required: false,
-      message: '本地备份文件夹名称',
-      alias: '本地备份文件夹名称'
+      message: 'C:\\Pictures\\',
+      alias: '本地备份绝对路径'
     },
   ]
 }
@@ -246,11 +246,12 @@ module.exports = (ctx:picgo) => {
     ctx.helper.uploader.register('rclone', {
       config,
       handle,
-      name: "rclone插件"
+      name: "RCLONE"
     })
   }
 
   return {
-    register
+    register,
+    uploader: 'RCLONE' 
   }
 }

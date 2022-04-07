@@ -1,12 +1,12 @@
 {
   "name": "picgo-plugin-rclone",
-  "version": "1.0.0",
-  "description": "rclone cmd",
+  "version": "1.0.2",
+  "description": "RCLONE插件",
   "main": "dist/index.js",
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "",
+  "homepage": "https://github.com/yabostone/picgo-plugin-rclone",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p .",
@@ -17,6 +17,7 @@
   },
   "keywords": [
     "picgo",
+    "picgo-gui-plugin",
     "picgo-plugin",
     "rclone",
     "Storj"
@@ -35,5 +36,9 @@
     "eslint-plugin-node": "^6.0.1",
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0"
+  },  
+  "dependencies": {
+    "file-type": "^16.2.0",
+    "mime": "^2.5.2"
   }
 }
