@@ -1,6 +1,6 @@
 {
   "name": "picgo-plugin-rclone",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "RCLONE插件",
   "main": "dist/index.js",
   "publishConfig": {
