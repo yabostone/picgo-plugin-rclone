@@ -1,6 +1,6 @@
 {
   "name": "picgo-plugin-rclone",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "RCLONE 支持Storj/Sia/",
   "main": "dist/index.js",
   "publishConfig": {

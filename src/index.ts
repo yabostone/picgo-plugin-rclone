@@ -196,7 +196,7 @@ const config = (ctx: picgo) => {
       default: userConfig.urlPrefix,
       message: '根据存储后端设定的域名前缀',
       required: true,
-      alias: '分配域名前缀'
+      alias: '域名前缀'
     },     
     {
       name: 'uploadPath',
@@ -211,7 +211,7 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.backupName1,
       required: false,
-      message: '填写备份远程源名',
+      message: '备份远程源名',
       alias: 'remoteName/远程源名'
     },
     {
@@ -219,7 +219,7 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.backupName2,
       required: false,
-      message: '填写备份远程源名',
+      message: '备份远程源名',
       alias: 'remoteName/远程源名'
     },
     {
@@ -227,7 +227,7 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.backupName3,
       required: false,
-      message: '填写备份远程源名',
+      message: '备份远程源名',
       alias: 'remoteName/远程源名'
     },
     {
