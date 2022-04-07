@@ -11,9 +11,12 @@ interface rcloneConfig{
     remotePrefix: string
     urlPrefix: string   //用来生成URL的前缀，必填，
     uploadPath: string  //上传路径,设定年月日
-    backupName: string
-    backupBucketName: string
-    backupPrefix: string
+    localPostion: string
+    backupName1: string
+    backupName2: string
+    backupName3: string
+    //backupBucketName: string
+    //backupPrefix: string
   }
   //返回false或者stdout
 function execFileSyncfunc(command:string, args: string[]):string|boolean{
@@ -79,11 +82,34 @@ const handle = async (ctx: picgo)=>{
     var fPath = formatPath(item,userConfig.uploadPath)
     const rcloneLocalURI = backupInLocal(ctx, "./", item)
     const rcloneRemoteURL = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
+    const rcloneLocalPosition = userConfig.localPostion + "/" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
+    const rcloneBackupURL1 = userConfig.backupName1 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+    const rcloneBackupURL2 = userConfig.backupName2 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+    const rcloneBackupURL3 = userConfig.backupName3 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
     if(checkRemoteExist(userConfig.remoteName)){
       console.log(rcloneLocalURI,rcloneRemoteURL)
+      console.log(rcloneLocalPosition)
+
       // ready to try catch
-      var up = execFileSyncfunc("rclone" , ['sync', rcloneLocalURI ,rcloneRemoteURL])
-      console.log(`rclone stdout is:\n ${up}`)
+      var up = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteURL])
+      console.log(`rclone stdout is remote:\n ${up}\n`)
+      if(userConfig.localPostion){
+        var localup = execFileSyncfunc("rclone", ["sync", "-P" , rcloneLocalURI, rcloneLocalPosition])
+        console.log(rcloneLocalURI,rcloneLocalPosition)
+        console.log(`rclone stdout local000:\n ${localup}\n`)
+      }
+      if(checkRemoteExist(userConfig.backupName1)){
+        var up1 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupURL1])
+        console.log(`rclone stdout 1111:\n ${up1}\n`)
+      }
+      if(checkRemoteExist(userConfig.backupName2)){
+        var up2 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupURL2])
+        console.log(`rclone stdout 2222:\n ${up2}\n`)
+      }
+      if(checkRemoteExist(userConfig.backupName3)){
+        var up3 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupURL3])
+        console.log(`rclone stdout 3333:\n ${up3}\n`)
+      }
     }else{
       throw new Error("remoteBucketName in config can not be found on remote.")
     }
@@ -130,9 +156,12 @@ const config = (ctx: picgo) => {
     remotePrefix: 'picgo',
     urlPrefix: '',   //用来生成URL的前缀，必填，
     uploadPath: '{year}/{month}/{md5}.{extName}',  //上传路径,设定年月日
-    backupName: '',
-    backupBucketName: '',
-    backupPrefix: 'picgo'
+    backupName1: '',
+    backupName2: '',
+    backupName3: '',
+    localPostion: '',
+    //backupBucketName: '',
+    //backupPrefix: 'picgo'
   }
   let userConfig = ctx.getConfig<rcloneConfig>('picBed.rclone')
   userConfig = { ...defaultConfig, ...(userConfig || {}) }
@@ -178,29 +207,37 @@ const config = (ctx: picgo) => {
       alias: '上传路径'
     },
     {
-      name: 'backupName',
+      name: 'backupName1',
       type: 'input',
-      default: userConfig.backupName,
+      default: userConfig.backupName1,
       required: false,
-      message: 'remoteSourceBackupName',
+      message: '备份远程源名1',
       alias: 'source remote points/远程源名'
     },
     {
-      name: 'backupBucketName',
+      name: 'backupName2',
       type: 'input',
-      default: userConfig.backupBucketName,
+      default: userConfig.backupName2,
       required: false,
-      message: 'BucketName',
-      alias: '远程源的桶名'
-    },      
+      message: '备份远程源名2',
+      alias: 'source remote points/远程源名'
+    },
     {
-      name: 'backupPrefix',
+      name: 'bucketName3',
       type: 'input',
-      default: userConfig.backupPrefix,
+      default: userConfig.backupName3,
       required: false,
-      message: '桶下前缀文件夹名',
-      alias: '桶下前缀文件夹名'
-    }
+      message: '备份远程源名3',
+      alias: 'source remote points/远程源名'
+    },
+    {
+      name: 'localPostion',
+      type: 'input',
+      default: userConfig.localPostion,
+      required: false,
+      message: '本地备份文件夹名称',
+      alias: '本地备份文件夹名称'
+    },
   ]
 }
 
