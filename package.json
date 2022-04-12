@@ -1,7 +1,7 @@
 {
   "name": "picgo-plugin-rclone",
-  "version": "1.0.8",
-  "description": "RCLONE 支持Storj/Sia多种后端",
+  "version": "1.0.9",
+  "description": "RCLONE 支持Storj/B2多种后端，支持备份",
   "main": "dist/index.js",
   "publishConfig": {
     "access": "public"
@@ -25,7 +25,8 @@
     "WEBDAV",
     "HTTP",
     "SeaweedFS",
-    "Seafile"
+    "Seafile",
+    "B2","Backblaze"
   ],
   "author": "xuan",
   "license": "MIT",

@@ -93,6 +93,7 @@ const handle = async (ctx: picgo)=>{
       console.log(rcloneLocalURI,rcloneRemoteDir)
       console.log(rcloneLocalPosition)
       // ready to try catch
+      //可用promise-all 将三个文件操作流程合并，返回三个promise-all后删除文件
       var up = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteDir])
       console.log(`rclone stdout is remote:\n ${up}\n`)
       if(userConfig.localPostion){

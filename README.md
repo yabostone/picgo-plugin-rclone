@@ -46,3 +46,6 @@ rclone version
 2. 对应路径需要有用户权限，如Linux需要能在对应位置创建文件夹。
 3. 参见： `/home/mxuan/`   `D:\mxuan\` 
 
+#### 功能优化
+1.开发一款avif压缩，使用sharp 版本
+2. 能够良好和插件联动
