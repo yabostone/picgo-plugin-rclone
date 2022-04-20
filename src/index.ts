@@ -15,8 +15,7 @@ interface rcloneConfig{
     backupName1: string
     backupName2: string
     backupName3: string
-    //backupBucketName: string
-    //backupPrefix: string
+
   }
   //返回false或者stdout
 function execFileSyncfunc(command:string, args: string[]):string|boolean{
