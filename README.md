@@ -48,7 +48,7 @@ rclone version
 #### 远端存储名
 对应rclone下remoteName，是使用`rclone config`后自己命名的remoteName，例如这里有三个存储后端，remoteName 分别是 `blog.fengidea.com`,`local`,`storj`。
 所以在remoteName/远程源名 处填写`storj`。
-![6740c8faa8acba0fd58fd8e5f253c8fc.png](../_resources/6740c8faa8acba0fd58fd8e5f253c8fc.png)
+![](https://link.ap1.storjshare.io/raw/jxl7tkgemjfqomuhhv3epaakfcqq/picgo/picgo/2022/04/bb515414181ea08841aaf07d48745a59.png)
 #### backup
 存在三个备份槽，默认不填入，填入后需要确认在rclone config下名称与之一致。
 需要填写remoteName、远程源名。
