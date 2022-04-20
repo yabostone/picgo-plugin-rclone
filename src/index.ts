@@ -88,6 +88,21 @@ function backupInLocal(ctx, imagePath, imgObject):Promise<string>{
   })
 }
 
+//返回路径
+function backupInLocalSync(ctx, imagePath, imgObject){
+  // 读取图片数据
+    var hashfName = formatPath(imgObject,"{md5}.{extName}")
+    var ret = `${imagePath}/${hashfName}`
+    var img = imgObject.buffer
+    if((!img) && (imgObject.base64Image)){
+        img = Buffer.from(imgObject.base64Image, 'base64')
+    }
+    //ret = path.resolve(ret)
+    // 备份图片
+    console.log("filepath in Local:" + ret)
+    fs.writeFileSync(ret, img)
+    return(ret)
+  }
 const handle = async (ctx: picgo)=>{
   let userConfig: rcloneConfig = ctx.getConfig("picBed.rclone")
   if(!userConfig){
@@ -118,8 +133,9 @@ let rcloneLocalURI = ""//  路径 返回，同时存储到文件
     var fPath = formatPath(item,userConfig.uploadPath)
     // 修改成loc路径
 
-  backupInLocal(ctx, os.homedir(), item).then((ret0)=>{
-    rcloneLocalURI=ret0;
+  //backupInLocal(ctx, os.homedir(), item).then((ret0)=>{
+  //  rcloneLocalURI=ret0;
+    rcloneLocalURI = backupInLocalSync(ctx, os.homedir(), item)
     const rcloneRemoteDir = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
     const rcloneLocalPosition = userConfig.localPostion + "/" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
     const rcloneBackupDir1 = userConfig.backupName1 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
@@ -167,10 +183,10 @@ let rcloneLocalURI = ""//  路径 返回，同时存储到文件
           var up3 = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir3])
           ListExec.push(up3)
         }
-      Promise.all(ListExec).then(()=>{  fs.unlinkSync(rcloneLocalURI)}).catch(()=>{console.log("执行rclone 命令失败")})
+       Promise.all(ListExec).then(()=>{  fs.unlinkSync(rcloneLocalURI)}).catch(()=>{console.log("执行rclone 命令失败")})
   }).catch(()=>{console.log("检查相关remoteName，backupName是否存在，是否正确")})
 
-})
+//})
 
     return new Promise<mapResult>(async (resolve,reject) => {
       if (!item.buffer && !item.base64Image) {
