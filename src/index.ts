@@ -15,7 +15,6 @@ interface rcloneConfig{
     backupName1: string
     backupName2: string
     backupName3: string
-    storeInLocal: boolean
     //backupBucketName: string
     //backupPrefix: string
   }
@@ -165,11 +164,12 @@ let rcloneLocalURI = ""//  路径 返回，同时存储到文件
       // 带URL的远程
       let ListExec = []
 
-      if(userConfig.storeInLocal){
+      var up = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteDir])
+
+      if(userConfig.localPostion){
         var lo = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneLocalPosition])
         ListExec.push(lo)
       }
-      var up = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteDir])
       ListExec.push(up)
       if(userConfig.backupName1){
           var up1 = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir1])
@@ -238,7 +238,6 @@ const config = (ctx: picgo) => {
     backupName2: '',
     backupName3: '',
     localPostion: '',
-    storeInLocal: false,
     //backupBucketName: '',
     //backupPrefix: 'picgo'
   }
@@ -251,7 +250,7 @@ const config = (ctx: picgo) => {
       default: userConfig.remoteName,
       required: true,
       message: '您设定的远程存储的名称',
-      alias: '远程源名'
+      alias: '远端存储名'
     },
     {
       name: 'remoteBucketName',
@@ -290,40 +289,32 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.backupName1,
       required: false,
-      message: '您设定的远程存储的名称',
-      alias: 'remoteName/远程源名'
+      message: '您设定的远程存储的名称(备份位1)',
+      alias: '备份存储名1'
     },
     {
       name: 'backupName2',
       type: 'input',
       default: userConfig.backupName2,
       required: false,
-      message: '您设定的远程存储的名称',
-      alias: 'remoteName/远程源名'
+      message: '您设定的远程存储的名称(备份位2)',
+      alias: '备份存储名2'
     },
     {
       name: 'bucketName3',
       type: 'input',
       default: userConfig.backupName3,
       required: false,
-      message: '您设定的远程存储的名称',
-      alias: 'remoteName/远程源名'
+      message: '您设定的远程存储的名称(备份位2)',
+      alias: '备份存储名3'
     },
     {
       name: 'localPostion',
       type: 'input',
       default: userConfig.localPostion,
       required: false,
-      message: '/home/picgo-rclone or D:\picgo-rclone',
+      message: '/home/picgo-rclone or D:\\picgo-rclone',
       alias: '本地备份绝对路径'
-    },
-    {
-      name: 'forceRefreshToken',
-      type: 'confirm',
-      default: userConfig.storeInLocal || false,
-      message: '将图片存储到本地',
-      required: false,
-      alias: '是否存储到本地'
     }
   ]
 }
