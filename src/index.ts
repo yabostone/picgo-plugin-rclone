@@ -3,7 +3,7 @@ import { formatPath} from './utils'
 import {execFile,execFileSync} from "child_process"
 import * as fs from 'fs'
 import path from  'path'
-
+import * as os from 'os'
 
 interface rcloneConfig{
     remoteName: string
@@ -11,10 +11,11 @@ interface rcloneConfig{
     remotePrefix: string
     urlPrefix: string   //用来生成URL的前缀，必填，
     uploadPath: string  //上传路径,设定年月日
-    localPostion: string
+    localPostion: string //必填
     backupName1: string
     backupName2: string
     backupName3: string
+    storeInLocal: boolean
     //backupBucketName: string
     //backupPrefix: string
   }
@@ -29,7 +30,19 @@ function execFileSyncfunc(command:string, args: string[]):string|boolean{
     return false;
   }
 }
-function checkRemoteExist(remoteName:string) : boolean{
+function execFilefunc(command:string, args: string[]){
+  return new Promise(function(resolve, reject) {
+    execFile(command, args, (error, stdout, stderr) => {
+        if (error) {
+            reject(error);
+            return;
+        }
+        resolve(stdout.trim());
+    });
+});}
+
+
+function checkRemoteExistSync(remoteName:string) : boolean{
   try{
     const execProcess = execFileSync('rclone', ['ls',remoteName+':'],{ 'encoding': 'utf8' })
     return true;
@@ -37,6 +50,18 @@ function checkRemoteExist(remoteName:string) : boolean{
     return false;
   }
 }
+
+function checkRemoteExist(remoteName:string):Promise<boolean>{
+  return new Promise(function(resolve, reject) {
+    execFile("rclone", ["ls",remoteName+":"], (error, stdout, stderr) => {
+        if (error) {
+            reject(false);
+            return false;
+        }
+        resolve(true);
+        return true;
+    });
+});}
 
 /**
  * 备份图片到本地
@@ -46,19 +71,21 @@ function checkRemoteExist(remoteName:string) : boolean{
  */
 
 //返回路径
-function backupInLocal(ctx, imagePath, imgObject):string{
+function backupInLocal(ctx, imagePath, imgObject):Promise<string>{
   // 读取图片数据
-  var hashfName = formatPath(imgObject,"{md5}.{extName}")
-  var ret = `${imagePath}/${hashfName}`
-  var img = imgObject.buffer
-  if((!img) && (imgObject.base64Image)){
-      img = Buffer.from(imgObject.base64Image, 'base64')
-  }
-  ret = path.resolve(ret)
-  // 备份图片
-  console.log("filepath in Local:" + ret)
-  fs.writeFileSync(ret, img)
-  return ret;
+  return new Promise<string>(function(resolve,reject){
+    var hashfName = formatPath(imgObject,"{md5}.{extName}")
+    var ret = `${imagePath}/${hashfName}`
+    var img = imgObject.buffer
+    if((!img) && (imgObject.base64Image)){
+        img = Buffer.from(imgObject.base64Image, 'base64')
+    }
+    //ret = path.resolve(ret)
+    // 备份图片
+    console.log("filepath in Local:" + ret)
+    fs.writeFileSync(ret, img)
+    resolve(ret)
+  })
 }
 
 const handle = async (ctx: picgo)=>{
@@ -72,6 +99,10 @@ const handle = async (ctx: picgo)=>{
   if(userConfig.urlPrefix){
     userConfig.urlPrefix = userConfig.urlPrefix.replace(/\/$/,'')
   }
+  if(userConfig.localPostion){
+    try{fs.mkdirSync(userConfig.localPostion)}
+    catch(error){console.log("创建文件夹失败，检查位置是否正确")}
+  }
   const output = ctx.output
   interface mapResult{
     url : string
@@ -81,47 +112,66 @@ const handle = async (ctx: picgo)=>{
 // 顺序 idx
 // 定义返回值，url，index
 //通常上传成功之后要给这个数组里每一项加入imgUrl以及url项。可以参
+
+let rcloneLocalURI = ""//  路径 返回，同时存储到文件
   const tasks = output.map((item, index) =>{//这里图片的值需要定义
     var fPath = formatPath(item,userConfig.uploadPath)
-    const rcloneLocalURI = backupInLocal(ctx, "./", item)//jpg 路径
+    // 修改成loc路径
+
+  backupInLocal(ctx, os.homedir(), item).then((ret0)=>{
+    rcloneLocalURI=ret0;
     const rcloneRemoteDir = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
     const rcloneLocalPosition = userConfig.localPostion + "/" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
     const rcloneBackupDir1 = userConfig.backupName1 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
     const rcloneBackupDir2 = userConfig.backupName2 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
     const rcloneBackupDir3 = userConfig.backupName3 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
-    if(checkRemoteExist(userConfig.remoteName)){
-      console.log(rcloneLocalURI,rcloneRemoteDir)
-      console.log(rcloneLocalPosition)
-      // ready to try catch
-      //可用promise-all 将三个文件操作流程合并，返回三个promise-all后删除文件
-      var up = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteDir])
-      console.log(`rclone stdout is remote:\n ${up}\n`)
-      if(userConfig.localPostion){
-        var localup = execFileSyncfunc("rclone", ["sync", "-P" , rcloneLocalURI, rcloneLocalPosition])
-        console.log(rcloneLocalURI,rcloneLocalPosition)
-        console.log(`rclone stdout local000:\n ${localup}\n`)
+    console.log(userConfig.localPostion)
+    console.log(rcloneLocalURI)
+    var checkTasks = []
+    if(userConfig.remoteName){
+      const promiseRemote = checkRemoteExist(userConfig.remoteName)
+      checkTasks.push(promiseRemote)
+    }
+    if(userConfig.backupName1){
+      const promise1 = checkRemoteExist(userConfig.backupName1)
+      checkTasks.push(promise1)
+    }
+    if(userConfig.backupName2){
+      const promise2 = checkRemoteExist(userConfig.backupName2)
+      checkTasks.push(promise2)
+    }
+    if(userConfig.backupName3){
+      const promise3 = checkRemoteExist(userConfig.backupName3)
+      checkTasks.push(promise3)
+    }    
+
+    Promise.all(checkTasks).then(()=>{
+      // 带URL的远程
+      let ListExec = []
+
+      if(userConfig.storeInLocal){
+        var lo = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneLocalPosition])
+        ListExec.push(lo)
       }
+      var up = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteDir])
+      ListExec.push(up)
       if(userConfig.backupName1){
-        if(checkRemoteExist(userConfig.backupName1)){
-          var up1 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir1])
-          console.log(`rclone stdout 1111:\n ${up1}\n`)
-        }
+          var up1 = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir1])
+          ListExec.push(up1)
       }
       if(userConfig.backupName2){
-        if(checkRemoteExist(userConfig.backupName2)){
-          var up2 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir2])
-          console.log(`rclone stdout 2222:\n ${up2}\n`)
+          var up2 = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir2])
+          ListExec.push(up2)
         }
-      }
       if(userConfig.backupName3){
-        if(checkRemoteExist(userConfig.backupName3)){
-          var up3 = execFileSyncfunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir3])
-          console.log(`rclone stdout 3333:\n ${up3}\n`)
+          var up3 = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir3])
+          ListExec.push(up3)
         }
-      }
-    }else{
-      throw new Error("remoteBucketName in config can not be found on remote.")
-    }
+      Promise.all(ListExec).then(()=>{  fs.unlinkSync(rcloneLocalURI)}).catch(()=>{console.log("执行rclone 命令失败")})
+  }).catch(()=>{console.log("检查相关remoteName，backupName是否存在，是否正确")})
+
+})
+
     return new Promise<mapResult>(async (resolve,reject) => {
       if (!item.buffer && !item.base64Image) {
         reject(new Error('undefined image'))
@@ -130,10 +180,11 @@ const handle = async (ctx: picgo)=>{
         index: index,
         url: userConfig.remotePrefix + "/" + fPath + "/" + path.basename(rcloneLocalURI),
       } as mapResult;
-      fs.unlinkSync(rcloneLocalURI)
       resolve(mR)
     })
-  })
+  })//上面是tasks内容，承接后面的tasks
+
+
   try {
     const results = await Promise.all(tasks)//返回值，这里只能用手动生成的值代替
     for (let result of results) {
@@ -146,6 +197,7 @@ const handle = async (ctx: picgo)=>{
       output[index].url = `${userConfig.urlPrefix}/${imgURL}`
       output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}`
   }
+  // 完成result后删除buffer，删除文件
     return ctx
   } catch (err) {
   ctx.log.error('rclone上传发生错误，请检查配置是否正确')
@@ -163,13 +215,14 @@ const config = (ctx: picgo) => {
   const defaultConfig: rcloneConfig = {
     remoteName: '',
     remoteBucketName: '',
-    remotePrefix: 'picgo',
+    remotePrefix: 'rclone',
     urlPrefix: '',   //用来生成URL的前缀，必填，
     uploadPath: '{year}/{month}/',  //上传路径,设定年月日
     backupName1: '',
     backupName2: '',
     backupName3: '',
     localPostion: '',
+    storeInLocal: false,
     //backupBucketName: '',
     //backupPrefix: 'picgo'
   }
@@ -181,7 +234,7 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.remoteName,
       required: true,
-      message: 'remoteSourceName',
+      message: '您设定的远程存储的名称',
       alias: '远程源名'
     },
     {
@@ -221,7 +274,7 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.backupName1,
       required: false,
-      message: '备份远程源名',
+      message: '您设定的远程存储的名称',
       alias: 'remoteName/远程源名'
     },
     {
@@ -229,7 +282,7 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.backupName2,
       required: false,
-      message: '备份远程源名',
+      message: '您设定的远程存储的名称',
       alias: 'remoteName/远程源名'
     },
     {
@@ -237,7 +290,7 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.backupName3,
       required: false,
-      message: '备份远程源名',
+      message: '您设定的远程存储的名称',
       alias: 'remoteName/远程源名'
     },
     {
@@ -245,9 +298,17 @@ const config = (ctx: picgo) => {
       type: 'input',
       default: userConfig.localPostion,
       required: false,
-      message: '本地备份绝对路径',
+      message: '/home/picgo-rclone or D:\picgo-rclone',
       alias: '本地备份绝对路径'
     },
+    {
+      name: 'forceRefreshToken',
+      type: 'confirm',
+      default: userConfig.storeInLocal || false,
+      message: '将图片存储到本地',
+      required: false,
+      alias: '是否存储到本地'
+    }
   ]
 }
 
