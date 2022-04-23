@@ -102,6 +102,8 @@ function backupInLocalSync(ctx, imagePath, imgObject){
     return(ret)
   }
 const handle = async (ctx: picgo)=>{
+  let ListExec = []
+
   let userConfig: rcloneConfig = ctx.getConfig("picBed.rclone")
   if(!userConfig){
     throw new Error("RCLONE in Picgo config not exist!")
@@ -116,23 +118,18 @@ const handle = async (ctx: picgo)=>{
     try{fs.mkdirSync(userConfig.localPostion)}
     catch(error){console.log("创建文件夹失败，检查位置是否正确")}
   }
-  const output = ctx.output
-  interface mapResult{
-    url : string
-    index : number
-  }
+
 //item 属于IImgInfo类型
 // 顺序 idx
 // 定义返回值，url，index
 //通常上传成功之后要给这个数组里每一项加入imgUrl以及url项。可以参
 
-let rcloneLocalURI = ""//  路径 返回，同时存储到文件
-  const tasks = output.map((item, index) =>{//这里图片的值需要定义
+  let rcloneLocalURI = ""//  路径 返回，同时存储到文件
+  for(let index in ctx.output){
+    let item = ctx.output[index]
+    console.log(item)
     var fPath = formatPath(item,userConfig.uploadPath)
     // 修改成loc路径
-
-  //backupInLocal(ctx, os.homedir(), item).then((ret0)=>{
-  //  rcloneLocalURI=ret0;
     rcloneLocalURI = backupInLocalSync(ctx, os.homedir(), item)
     const rcloneRemoteDir = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
     const rcloneLocalPosition = userConfig.localPostion + "/" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
@@ -159,17 +156,16 @@ let rcloneLocalURI = ""//  路径 返回，同时存储到文件
       checkTasks.push(promise3)
     }    
 
-    Promise.all(checkTasks).then(()=>{
+    await Promise.all(checkTasks).then(()=>{
       // 带URL的远程
-      let ListExec = []
 
       var up = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneRemoteDir])
+      ListExec.push(up)
 
       if(userConfig.localPostion){
         var lo = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneLocalPosition])
         ListExec.push(lo)
       }
-      ListExec.push(up)
       if(userConfig.backupName1){
           var up1 = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir1])
           ListExec.push(up1)
@@ -182,49 +178,37 @@ let rcloneLocalURI = ""//  路径 返回，同时存储到文件
           var up3 = execFilefunc("rclone" , ['sync', '-P' ,rcloneLocalURI ,rcloneBackupDir3])
           ListExec.push(up3)
         }
-       Promise.all(ListExec).then(()=>{  fs.unlinkSync(rcloneLocalURI)}).catch(()=>{console.log("执行rclone 命令失败")})
-  }).catch(()=>{console.log("检查相关remoteName，backupName是否存在，是否正确")})
-
-//})
-
-    return new Promise<mapResult>(async (resolve,reject) => {
-      if (!item.buffer && !item.base64Image) {
-        reject(new Error('undefined image'))
-      }
-      let mR = {
-        index: index,
-        url: userConfig.remotePrefix + "/" + fPath + "/" + path.basename(rcloneLocalURI),
-      } as mapResult;
-      resolve(mR)
     })
-  })//上面是tasks内容，承接后面的tasks
 
-
-  try {
-    const results = await Promise.all(tasks)//返回值，这里只能用手动生成的值代替
-    for (let result of results) {
-      const { index, url } = result
+    await Promise.all(ListExec).then(()=>{
+      console.log(item)
+    //if (!ctx.output[index].buffer && !ctx.output[index].base64Image) {
+    //  ctx.log.error(new Error('undefined image'))
+    //}
+      const url= userConfig.remotePrefix + "/" + fPath + "/" + path.basename(rcloneLocalURI)
       const imgURL = url
-      delete output[index].buffer
-      delete output[index].base64Image
-      output[index].url = url
-      output[index].imgUrl = url
-      output[index].url = `${userConfig.urlPrefix}/${imgURL}`
-      output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}`
-  }
-  // 完成result后删除buffer，删除文件
-    return ctx
-  } catch (err) {
-  ctx.log.error('rclone上传发生错误，请检查配置是否正确')
-  ctx.log.error(err)
-  ctx.emit('notification', {
-    title: 'rclone上传错误',
-    body: '请检查存储桶、远程源名字是否正确',
-    text: ''
-  })
-  throw err
-  }
-}
+      delete item.buffer
+      delete item.base64Image
+      item.url = `${userConfig.urlPrefix}/${imgURL}`
+      item.imgUrl = `${userConfig.urlPrefix}/${imgURL}`
+      ctx.output[index]=item
+      return ctx
+  }).catch((err)=>{
+    ctx.log.error('rclone上传发生错误，请检查配置是否正确')
+    ctx.log.error(err)
+    ctx.emit('notification', {
+      title: 'rclone上传错误',
+      body: '请检查存储桶、远程源名字是否正确',
+      text: ''
+    })
+    throw err
+  }).then(()=>{  fs.unlinkSync(rcloneLocalURI);ctx.log.info(`rcloneLocalURI:${rcloneLocalURI}`);ctx.log.info("已经删除临时文件")}).catch(()=>{console.log("执行rclone 命令失败");ctx.log.info("执行rclone 命令失败")})
+
+}//for
+
+}//handle
+
+
 
 const config = (ctx: picgo) => {
   const defaultConfig: rcloneConfig = {

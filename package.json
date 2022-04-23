@@ -1,6 +1,6 @@
 {
   "name": "picgo-plugin-rclone",
-  "version": "1.1.6",
+  "version": "1.1.9",
   "description": "RCLONE 支持Storj/B2多种后端，支持备份",
   "main": "dist/index.js",
   "publishConfig": {
