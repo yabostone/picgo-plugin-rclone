@@ -1,25 +1,42 @@
 ## 插件简介
 rclone 插件是一款基于PicGO调用rclone应用实现上传和备份的插件，支持rclone下各种存储后端的**上传**，**备份**和**图床**。同时rclone可以通过命令行实现图床的全量迁移。
 目前测试支持
+<<<<<<< HEAD
 + 去中心化存储Storj（免费150GB）。
 + Local（本地备份）
 + 自建存储后端（WEBDAV，HTTP,Seafile)
 + 分布式存储后端（SeaweedFS，Minio）
 + COS，OSS，S3兼容性存储，B2等等
+=======
++ 去中心化存储：Storj（免费150GB）。
++ Local：（本地备份）
++ 自建备份后端（WEBDAV，HTTP,Seafile)
++ 分布式存储后端（Minio , SeaweedFS）
++ B2，COS，OSS，S3兼容性存储，等等
+关于图床功能：
+图床功能需要对应的云存储后端支持网页链接的直接调用，或者和CDN联动能够直接用https等链接方式直接访问到。
+
+>>>>>>> 621d56fc280a60461ec68cfe1e98581f01119ec2
 
 ## 功能简介
 ### 上传
 在remote 选项中配置相关信息，默认会将图片上传到指定位置。
+**上传功能区（必填）**：
+![](https://link.ap1.storjshare.io/raw/jxl7tkgemjfqomuhhv3epaakfcqq/picgo/picgo/2022/04/ed1aa3373bce454f00fc39abee423a8e.png)
 
 ### 备份
-插件设定了三个备份后端槽，可以同时备份到三个存储后端，只要填写远端存储的名字信息就可以。支持备份到本地,详见：
+插件设定了三个备份后端槽，可以同时备份到三个存储后端，只要填写 远端存储名 信息就可以。支持备份到本地,详见：
++ 有三个后端槽，最多支持三处备份，需要rclone配置好远端存储名，测试好并且正常连接。
 
+![](https://link.ap1.storjshare.io/raw/jxl7tkgemjfqomuhhv3epaakfcqq/picgo/picgo/2022/04/d9cb347e859b567f7d608b4cf9b4e1f9.png)
+
+#### 可以构建图床后端的快速迁移，
+如网站被D时，切换后端，或者cloudflare使用。
 
 ### 图床
-图床功能只是拼接了域名前缀和路径地址，可能需要与CDN联动。
-并没有限定一定要用第一个命令的地址，备份存储的地址如果开启了外网访问，拼接URL也是可以的。
+图床功能只是拼接了域名前缀和路径地址，可能需要与CDN联动。填写域名前缀，后面和桶名和文件上传路径进行拼接。
++ 如果想确保图床后端更新，不用更新文件URL的话，需要配置CDN域名指向合适的后端。
 
-像Sia一类的直接生成URL的暂时不可直接用，需要配置CDN才能使用， URL前缀来自各个后端提供商的页面。
 
 ## 配置方法
 
@@ -36,20 +53,22 @@ rclone version
 
 ### 配置项解释
 
-#### remoteName
-对应rclone下remoteName，是使用`rclone config`后自己命名的remoteName，
-
+#### 远端存储名
+对应rclone下remoteName，是使用`rclone config`后自己命名的remoteName，例如这里有三个存储后端，remoteName 分别是 `blog.fengidea.com`,`local`,`storj`。
+所以在remoteName/远程源名 处填写`storj`。
+![](https://link.ap1.storjshare.io/raw/jxl7tkgemjfqomuhhv3epaakfcqq/picgo/picgo/2022/04/bb515414181ea08841aaf07d48745a59.png)
 #### backup
 存在三个备份槽，默认不填入，填入后需要确认在rclone config下名称与之一致。
+需要填写remoteName、远程源名。
 
 #### LocalPostion
-1. 位置建议应该绝对路径
+这里填写需要注意：
+1. 位置建议应该填写绝对路径
 2. 对应路径需要有用户权限，如Linux需要能在对应位置创建文件夹。
 3. 参见： `/home/mxuan/`   `D:\mxuan\` 
 
-#### 功能优化
-1.开发一款avif压缩，使用sharp 版本
-2. 能够良好和插件联动
+### rclone config配置
+这里给出了几个配置rclone的config项的示例。
 
-### bug
-在某些特定情况下，会出现存储图片的文件夹到了一个不能访问的文件夹的地方，导致上传失败，又或者，在使用URL上传时候好像会走的是插件流程，
+网上查找rclone的配置教程，测试成功后再使用插件。。
+
