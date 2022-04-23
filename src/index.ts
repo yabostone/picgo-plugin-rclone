@@ -49,9 +49,9 @@ function checkRemoteExistSync(remoteName:string) : boolean{
   }
 }
 
-function checkRemoteExist(remoteName:string,bucketName:string):Promise<boolean>{
+function checkRemoteExist(remoteName:string,remoteBucketName:string):Promise<boolean>{
   return new Promise(function(resolve, reject) {
-    execFile("rclone", ["mkdir ",remoteName+":"+ bucketName], (error, stdout, stderr) => {
+    execFile("rclone", ["mkdir", remoteName+":"+ remoteBucketName], (error, stdout, stderr) => {
         if (error) {
             reject(false);
             return false;
