@@ -49,9 +49,9 @@ function checkRemoteExistSync(remoteName:string) : boolean{
   }
 }
 
-function checkRemoteExist(remoteName:string):Promise<boolean>{
+function checkRemoteExist(remoteName:string,bucketName:string):Promise<boolean>{
   return new Promise(function(resolve, reject) {
-    execFile("rclone", ["ls",remoteName+":"], (error, stdout, stderr) => {
+    execFile("rclone", ["mkdir ",remoteName+":"+ bucketName], (error, stdout, stderr) => {
         if (error) {
             reject(false);
             return false;
@@ -140,19 +140,19 @@ const handle = async (ctx: picgo)=>{
     console.log(rcloneLocalURI)
     var checkTasks = []
     if(userConfig.remoteName){
-      const promiseRemote = checkRemoteExist(userConfig.remoteName)
+      const promiseRemote = checkRemoteExist(userConfig.remoteName,userConfig.remoteBucketName)
       checkTasks.push(promiseRemote)
     }
     if(userConfig.backupName1){
-      const promise1 = checkRemoteExist(userConfig.backupName1)
+      const promise1 = checkRemoteExist(userConfig.backupName1,userConfig.remoteBucketName)
       checkTasks.push(promise1)
     }
     if(userConfig.backupName2){
-      const promise2 = checkRemoteExist(userConfig.backupName2)
+      const promise2 = checkRemoteExist(userConfig.backupName2,userConfig.remoteBucketName)
       checkTasks.push(promise2)
     }
     if(userConfig.backupName3){
-      const promise3 = checkRemoteExist(userConfig.backupName3)
+      const promise3 = checkRemoteExist(userConfig.backupName3,userConfig.remoteBucketName)
       checkTasks.push(promise3)
     }    
 
