@@ -106,11 +106,19 @@ const handle = async (ctx: picgo)=>{
     var fPath = formatPath(item,userConfig.uploadPath)
     // 修改成loc路径
     rcloneLocalURI = backupInLocalSync(ctx, os.homedir(), item)
-    const rcloneRemoteDir = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
-    const rcloneLocalPosition = userConfig.localPostion + "/" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
-    const rcloneBackupDir1 = userConfig.backupName1 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
-    const rcloneBackupDir2 = userConfig.backupName2 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
-    const rcloneBackupDir3 = userConfig.backupName3 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+    if(userConfig.remotePrefix){
+      var rcloneRemoteDir = userConfig.remoteName + ":" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
+      var rcloneLocalPosition = userConfig.localPostion + "/" + userConfig.remoteBucketName + '/' +userConfig.remotePrefix + '/' + fPath
+      var rcloneBackupDir1 = userConfig.backupName1 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+      var rcloneBackupDir2 = userConfig.backupName2 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+      var rcloneBackupDir3 = userConfig.backupName3 + ":" + userConfig.remoteBucketName + "/" + userConfig.remotePrefix + "/" + fPath
+    }else{
+    var rcloneRemoteDir = userConfig.remoteName + ":" + userConfig.remoteBucketName +   '/' + fPath
+    var rcloneLocalPosition = userConfig.localPostion + "/" + userConfig.remoteBucketName +  '/' + fPath
+    var rcloneBackupDir1 = userConfig.backupName1 + ":" + userConfig.remoteBucketName +   "/" + fPath
+    var rcloneBackupDir2 = userConfig.backupName2 + ":" + userConfig.remoteBucketName +   "/" + fPath
+    var rcloneBackupDir3 = userConfig.backupName3 + ":" + userConfig.remoteBucketName +   "/" + fPath
+    }
     console.log(userConfig.localPostion)
     console.log(rcloneLocalURI)
     await precheck(ctx)
@@ -141,8 +149,11 @@ const handle = async (ctx: picgo)=>{
     //if (!ctx.output[index].buffer && !ctx.output[index].base64Image) {
     //  ctx.log.error(new Error('undefined image'))
     //}
-      const url= userConfig.remotePrefix + "/" + fPath + "/" + path.basename(rcloneLocalURI)
-      const imgURL = url
+    if(userConfig.remotePrefix){
+      var imgURL= userConfig.remotePrefix + "/" + fPath + "/" + path.basename(rcloneLocalURI)
+    }else{
+      var imgURL=  fPath + "/" + path.basename(rcloneLocalURI)
+    }
       delete item.buffer
       delete item.base64Image
       item.url = `${userConfig.urlPrefix}/${imgURL}`
@@ -170,7 +181,7 @@ const config = (ctx: picgo) => {
   const defaultConfig: rcloneConfig = {
     remoteName: '',
     remoteBucketName: '',
-    remotePrefix: 'rclone',
+    remotePrefix: '',
     urlPrefix: '',   //用来生成URL的前缀，必填，
     uploadPath: '{year}/{month}/',  //上传路径,设定年月日
     backupName1: '',
@@ -203,7 +214,7 @@ const config = (ctx: picgo) => {
       name: 'remotePrefix',
       type: 'input',
       default: userConfig.remotePrefix,
-      required: true,
+      required: false,
       message: '桶下前缀文件夹名',
       alias: '桶下前缀Prefix'
     },
